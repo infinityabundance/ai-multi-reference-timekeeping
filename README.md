@@ -1,6 +1,11 @@
 # 🕒 ai-multi-reference-timekeeping
 **AI-Assisted Multi-Reference Timekeeping for Commodity Networks**
 
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Zenodo DOI](https://img.shields.io/badge/DOI-Zenodo-inactive.svg)](https://zenodo.org/)
+[![Open In Colab](https://img.shields.io/badge/Open%20in-Colab-orange.svg)](https://colab.research.google.com/)
+[![IEEE 1588](https://img.shields.io/badge/IEEE-1588%20PTP-lightgrey.svg)](https://standards.ieee.org/standard/1588-2008.html)
+
 This repository contains the reference implementation and reproducibility artifacts for the paper:
 
 **_An AI-Assisted Multi-Reference Timekeeping Architecture for Commodity Networks_**  
@@ -127,6 +132,19 @@ If you use this work, please cite:
     }
 
 ---
+
+## 🚧 Status
+
+This repository accompanies a research paper and is intended to evolve.  
+Contributions, discussion, and replication studies are welcome 🤝.
+
+---
+
+## 🙏 Acknowledgments
+
+This work builds on established research in time metrology, clock ensembles,
+and IEEE 1588 Precision Time Protocol, and aims to make these ideas more
+accessible to open-source and experimental systems communities.
 
 ## 🚧 Status
 
