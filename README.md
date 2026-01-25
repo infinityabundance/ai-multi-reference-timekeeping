@@ -1,5 +1,5 @@
-# ai-multi-reference-timekeeping
-# 🕒 AI-Assisted Multi-Reference Timekeeping for Commodity Networks
+# 🕒 ai-multi-reference-timekeeping
+**AI-Assisted Multi-Reference Timekeeping for Commodity Networks**
 
 This repository contains the reference implementation and reproducibility artifacts for the paper:
 
