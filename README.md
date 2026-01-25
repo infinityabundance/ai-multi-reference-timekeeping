@@ -10,7 +10,7 @@ This repository contains the reference implementation and reproducibility artifa
 
 **_An AI-Assisted Multi-Reference Timekeeping Architecture for Commodity Networks_**  
 👤 Riaan de Beer  
-📄 Zenodo DOI: [([https://zenodo.org/records/18366358))](https://zenodo.org/records/18366358)
+📄 Zenodo DOI: [https://zenodo.org/records/18366358))](https://zenodo.org/records/18366358)
 
 This project explores a low-cost, AI-assisted approach to time synchronization that synthesizes a **virtual master clock** from multiple imperfect timing references (e.g., GNSS 🌍, PTP 🔗, NTP 🌐) using classical estimation techniques augmented with lightweight machine learning 🤖.
 
