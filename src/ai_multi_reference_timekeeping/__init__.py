@@ -1,12 +1,56 @@
 """Top-level package for AI-assisted multi-reference timekeeping utilities."""
 
-from .fusion import ClockUpdate, Measurement, ReferenceFusion, VirtualClock
+from .fusion import ClockUpdate, HeuristicFusion, Measurement, QualityMeasurement, ReferenceFusion, VirtualClock
 from .kalman import ClockKalmanFilter
+from .time_server import (
+    AudioFeatureSensor,
+    EnvironmentalSensor,
+    GeigerCounterSensor,
+    GpsLockSensor,
+    GpioPulseSensor,
+    LinearInferenceModel,
+    LightweightInferenceModel,
+    MlVarianceModel,
+    NmeaGpsReference,
+    NtpReference,
+    RtcReference,
+    SerialReference,
+    SensorAggregator,
+    SensorFrame,
+    SerialLineSensor,
+    SlewDriftDetector,
+    TimeServer,
+    TimeServerStep,
+    open_line_source,
+    RadioSnrSensor,
+)
 
 __all__ = [
     "ClockUpdate",
     "ClockKalmanFilter",
     "Measurement",
+    "QualityMeasurement",
     "ReferenceFusion",
+    "HeuristicFusion",
     "VirtualClock",
+    "LightweightInferenceModel",
+    "LinearInferenceModel",
+    "MlVarianceModel",
+    "AudioFeatureSensor",
+    "EnvironmentalSensor",
+    "GeigerCounterSensor",
+    "GpsLockSensor",
+    "GpioPulseSensor",
+    "NmeaGpsReference",
+    "NtpReference",
+    "RtcReference",
+    "SerialReference",
+    "RadioSnrSensor",
+    "SensorAggregator",
+    "SensorFrame",
+    "SerialLineSensor",
+    "SlewDriftDetector",
+    "TimeServer",
+    "TimeServerStep",
+    "open_line_source",
 ]
