@@ -41,9 +41,11 @@ class ReferenceSource:
             A Measurement including the noise variance.
         """
 
+        # Ensure a positive noise standard deviation.
         if self.noise_std <= 0:
             raise ValueError("noise_std must be positive")
 
+        # Add Gaussian noise and optional biases.
         noise = random.gauss(0.0, self.noise_std)
         biased_offset = true_offset + self.bias + self.drift_bias * elapsed + noise
         return Measurement(
@@ -64,6 +66,7 @@ class ReferenceEnsemble:
     def snapshot(self, true_offset: float, elapsed: float) -> list[Measurement]:
         """Generate measurements from all sources for the current step."""
 
+        # Collect measurements from each reference for the same time step.
         return [source.measure(true_offset, elapsed) for source in self._sources]
 
 
@@ -84,6 +87,7 @@ class DeterministicReference:
     def measure(self, elapsed: float) -> Measurement:
         """Generate a deterministic measurement for a given elapsed time."""
 
+        # Deterministic generator avoids random noise for test predictability.
         return Measurement(
             name=self._name,
             offset=self._generator(elapsed),
