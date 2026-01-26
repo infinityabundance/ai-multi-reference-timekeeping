@@ -14,7 +14,6 @@ class RunningStats:
     count: int = 0
 
     def update(self, value: float) -> None:
-        # Welford's algorithm for stable online variance.
         self.count += 1
         delta = value - self.mean
         self.mean += delta / self.count
@@ -39,12 +38,10 @@ class SensorCharacterization:
         self._stats: dict[str, RunningStats] = {}
 
     def update(self, name: str, residual: float) -> None:
-        # Update per-reference residual statistics.
         stats = self._stats.setdefault(name, RunningStats())
         stats.update(residual)
 
     def z_score(self, name: str, residual: float) -> float:
-        # Compute z-score to identify outliers.
         stats = self._stats.get(name)
         if stats is None or stats.count < 2 or stats.stddev == 0:
             return 0.0

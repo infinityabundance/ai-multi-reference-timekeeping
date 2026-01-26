@@ -30,15 +30,12 @@ class HealthMonitor:
         self._shm_last_write: float | None = None
 
     def mark_update(self) -> None:
-        # Mark the most recent time-server update timestamp.
         self._last_update = time.time()
 
     def mark_shm_write(self) -> None:
-        # Mark when the Chrony SHM writer last published a sample.
         self._shm_last_write = time.time()
 
     def status(self) -> HealthStatus:
-        # Consider the system unhealthy if no recent updates.
         now = time.time()
         last_update = self._last_update or 0.0
         ok = now - last_update <= self._freshness_window if last_update else False
@@ -53,13 +50,11 @@ class MetricsTracker:
         self._offsets: list[float] = []
 
     def update(self, offset: float) -> None:
-        # Append and trim to enforce window size.
         self._offsets.append(offset)
         if len(self._offsets) > self._window_size:
             self._offsets.pop(0)
 
     def metrics(self) -> dict[str, float]:
-        # Return empty when insufficient samples are available.
         if len(self._offsets) < 3:
             return {}
         return {
@@ -78,14 +73,12 @@ class MetricsExporter:
         self._thread: threading.Thread | None = None
 
     def start(self, host: str, port: int) -> None:
-        # Simple HTTP server for metrics and health checks.
         tracker = self._tracker
         health = self._health
 
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self) -> None:  # noqa: N802
                 if self.path == "/metrics":
-                    # Prometheus-style text exposition.
                     body = []
                     for key, value in tracker.metrics().items():
                         body.append(f"{key} {value}")
@@ -95,7 +88,6 @@ class MetricsExporter:
                     self.end_headers()
                     self.wfile.write(response)
                 elif self.path == "/health":
-                    # JSON health status for operators.
                     status = health.status()
                     response = json.dumps(status.__dict__).encode()
                     self.send_response(200 if status.ok else 503)
