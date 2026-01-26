@@ -3,12 +3,7 @@ from __future__ import annotations
 from ai_multi_reference_timekeeping.fusion import Measurement, ReferenceFusion, VirtualClock
 from ai_multi_reference_timekeeping.kalman import ClockCovariance, ClockKalmanFilter, ClockState
 from ai_multi_reference_timekeeping.time_server import (
-    AudioFeatureSensor,
-    LinearInferenceModel,
     LightweightInferenceModel,
-    MlVarianceModel,
-    EnvironmentalSensor,
-    SerialReference,
     SensorAggregator,
     SensorFrame,
     SlewDriftDetector,
@@ -67,52 +62,3 @@ def test_time_server_step_reports_drift_hint() -> None:
     assert update.fused_offset == 0.2
     assert drift_estimate.samples == 1
     assert drift_hint == 0.0
-
-
-def test_linear_inference_model_scales_variance() -> None:
-    model = LinearInferenceModel(feature_weights={"temperature_c": 0.5}, reference_bias={"ref": 0.1})
-    frame = SensorFrame(timestamp=0.0, temperature_c=10.0)
-    scaled = model.adjusted_variance(1.0, frame, "ref")
-    assert scaled > 1.0
-
-
-def test_audio_feature_sensor_extracts_activity() -> None:
-    class ToneSource:
-        def sample(self) -> tuple[list[float], int]:
-            sample_rate = 8000
-            samples = [0.5] * 128
-            return samples, sample_rate
-
-    sensor = AudioFeatureSensor(ToneSource())
-    features = sensor.sample()
-    assert features["ambient_audio_db"] is not None
-    assert features["ac_hum_phase_rad"] is not None
-    assert features["ac_hum_uncertainty"] is not None
-
-
-def test_ml_variance_model_updates_bias() -> None:
-    model = MlVarianceModel(feature_weights={"temperature_c": 0.1}, learning_rate=0.1)
-    frame = SensorFrame(timestamp=0.0, temperature_c=20.0)
-    measurement = Measurement(name="ref", offset=2.0, variance=0.1)
-    variance_before = model.adjusted_variance(0.1, frame, "ref")
-    model.update(frame, [measurement], fused_offset=0.0, ground_truth_offset=1.0)
-    variance_after = model.adjusted_variance(0.1, frame, "ref")
-    assert variance_after != variance_before
-
-
-def test_environmental_sensor_adapter() -> None:
-    sensor = EnvironmentalSensor(lambda: (22.0, 45.0, 1012.0))
-    frame = sensor.sample()
-    assert frame["temperature_c"] == 22.0
-    assert frame["humidity_pct"] == 45.0
-    assert frame["pressure_hpa"] == 1012.0
-
-
-def test_serial_reference_adapter() -> None:
-    def parser(line: str) -> Measurement:
-        return Measurement(name="serial", offset=float(line), variance=0.5)
-
-    source = iter(["0.25"]).__next__
-    ref = SerialReference(parser, source)
-    measurement = ref.sample(SensorFrame(timestamp=0.0))
-    assert measurement.offset == 0.25

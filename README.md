@@ -51,24 +51,17 @@ that lets you:
 - 🧩 Plug in sensor inputs (temperature, humidity, pressure, AC hum, SDR SNR, Geiger CPM, audio activity)
 - 📡 Collect references over NTP, GPS NMEA, or the hardware RTC (via `hwclock`)
 - 🔌 Listen from GPIO/USB/serial by wiring sensors with `GpioPulseSensor`, `SerialLineSensor`, or `open_line_source`
-- 🎙️ Extract AC hum, ambient audio, bird, and traffic activity features with `AudioFeatureSensor`
-- 🧠 Adjust reference variance using heuristic, linear, or online ML models
+- 🧠 Adjust reference variance using a lightweight inference model
 - 📉 Estimate drift and slew from recent offsets
-- ⚖️ Support heuristic fusion via `HeuristicFusion` when quality scores are available
-- 📏 Provide TDEV/MTIE/holdover metrics and Chrony SHM integration helpers
 
 Example usage:
 
 ```python
-from ai_multi_reference_timekeeping.fusion import HeuristicFusion, VirtualClock
+from ai_multi_reference_timekeeping.fusion import ReferenceFusion, VirtualClock
 from ai_multi_reference_timekeeping.kalman import ClockCovariance, ClockKalmanFilter, ClockState
 from ai_multi_reference_timekeeping.time_server import (
-    AudioFeatureSensor,
-    LinearInferenceModel,
     LightweightInferenceModel,
-    MlVarianceModel,
     NtpReference,
-    EnvironmentalSensor,
     SensorAggregator,
     TimeServer,
 )
@@ -79,44 +72,21 @@ kalman = ClockKalmanFilter(
     process_noise_offset=1e-4,
     process_noise_drift=1e-6,
 )
-clock = VirtualClock(kalman_filter=kalman, fusion=HeuristicFusion())
+clock = VirtualClock(kalman_filter=kalman, fusion=ReferenceFusion())
 
 class EnvSensor:
     def sample(self) -> dict[str, float]:
         return {"temperature_c": 27.0, "humidity_pct": 40.0}
 
-class AudioSource:
-    def sample(self) -> tuple[list[float], int]:
-        return [0.0] * 128, 8000
-
 server = TimeServer(
     clock=clock,
     references=[NtpReference(name="nist")],
-    sensors=SensorAggregator(
-        EnvSensor(),
-        AudioFeatureSensor(AudioSource()),
-        EnvironmentalSensor(lambda: (27.0, 40.0, 1010.0)),
-    ),
-    inference=MlVarianceModel(feature_weights={"temperature_c": 0.02, "humidity_pct": 0.01}),
+    sensors=SensorAggregator(EnvSensor()),
+    inference=LightweightInferenceModel(),
 )
 
 update, frame, drift_estimate, drift_hint = server.step(dt=1.0)
 print(update.fused_offset, drift_estimate.drift, drift_hint)
-```
-
-Chrony integration and metrics utilities:
-
-```python
-from ai_multi_reference_timekeeping.chrony import ChronyShmSample, ChronyShmWriter
-from ai_multi_reference_timekeeping.metrics import holdover_stats, mtie, tdev
-
-writer = ChronyShmWriter()
-writer.write(ChronyShmSample(offset=0.001, delay=0.0001))
-
-offsets = [0.0, 0.0005, 0.001]
-print(tdev(offsets, tau=1))
-print(mtie(offsets, window=2))
-print(holdover_stats(offsets, sample_interval=1.0))
 ```
 
 ---
@@ -231,15 +201,3 @@ This work builds on established research in time metrology, clock ensembles,
 and IEEE 1588 Precision Time Protocol, and aims to make these ideas more
 accessible to open-source and experimental systems communities.
 
-## 🚧 Status
-
-This repository accompanies a research paper and is intended to evolve.  
-Contributions, discussion, and replication studies are welcome 🤝.
-
----
-
-## 🙏 Acknowledgments
-
-This work builds on established research in time metrology, clock ensembles,
-and IEEE 1588 Precision Time Protocol, and aims to make these ideas more
-accessible to open-source and experimental systems communities.
