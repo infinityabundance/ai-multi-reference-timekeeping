@@ -43,6 +43,61 @@ This work investigates whether **intelligent multi-reference fusion**, combined 
 
 ---
 
+## 🛰️ Time Server Scaffold (Sensors + AI Weighting)
+
+The repository now includes a **time server scaffold** in `src/ai_multi_reference_timekeeping/time_server.py`
+that lets you:
+
+- 🧩 Plug in sensor inputs (temperature, humidity, pressure, AC hum, SDR SNR, Geiger CPM, audio activity)
+- 📡 Collect references over NTP, GPS NMEA, or the hardware RTC (via `hwclock`)
+- 🔌 Listen from GPIO/USB/serial by wiring sensors with `GpioPulseSensor`, `SerialLineSensor`, or `open_line_source`
+- 🎙️ Extract AC hum, ambient audio, bird, and traffic activity features with `AudioFeatureSensor`
+- 🧠 Adjust reference variance using a lightweight inference model
+- 📉 Estimate drift and slew from recent offsets
+
+Example usage:
+
+```python
+from ai_multi_reference_timekeeping.fusion import ReferenceFusion, VirtualClock
+from ai_multi_reference_timekeeping.kalman import ClockCovariance, ClockKalmanFilter, ClockState
+from ai_multi_reference_timekeeping.time_server import (
+    AudioFeatureSensor,
+    LinearInferenceModel,
+    LightweightInferenceModel,
+    NtpReference,
+    SensorAggregator,
+    TimeServer,
+)
+
+kalman = ClockKalmanFilter(
+    state=ClockState(offset=0.0, drift=0.0),
+    covariance=ClockCovariance(p00=1.0, p01=0.0, p10=0.0, p11=1.0),
+    process_noise_offset=1e-4,
+    process_noise_drift=1e-6,
+)
+clock = VirtualClock(kalman_filter=kalman, fusion=ReferenceFusion())
+
+class EnvSensor:
+    def sample(self) -> dict[str, float]:
+        return {"temperature_c": 27.0, "humidity_pct": 40.0}
+
+class AudioSource:
+    def sample(self) -> tuple[list[float], int]:
+        return [0.0] * 128, 8000
+
+server = TimeServer(
+    clock=clock,
+    references=[NtpReference(name="nist")],
+    sensors=SensorAggregator(EnvSensor(), AudioFeatureSensor(AudioSource())),
+    inference=LinearInferenceModel(feature_weights={"temperature_c": 0.02, "humidity_pct": 0.01}),
+)
+
+update, frame, drift_estimate, drift_hint = server.step(dt=1.0)
+print(update.fused_offset, drift_estimate.drift, drift_hint)
+```
+
+---
+
 ## 🚫 Non-goals
 
 This project explicitly does **not** aim to:
@@ -158,4 +213,3 @@ Contributions, discussion, and replication studies are welcome 🤝.
 This work builds on established research in time metrology, clock ensembles,
 and IEEE 1588 Precision Time Protocol, and aims to make these ideas more
 accessible to open-source and experimental systems communities.
-
