@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <rect width="800" height="450" fill="#ffffff"/>
+  <text x="40" y="40" font-family="Arial" font-size="18">MTIE over time (GNSS dropout scenario)</text>
+  <line x1="60" y1="60" x2="60" y2="380" stroke="#000" stroke-width="2"/>
+  <line x1="60" y1="380" x2="760" y2="380" stroke="#000" stroke-width="2"/>
+  <text x="70" y="400" font-family="Arial" font-size="12">Time (s)</text>
+  <text x="10" y="70" font-family="Arial" font-size="12" transform="rotate(-90 10,70)">MTIE (s)</text>
+
+  <!-- Chrony default (red) -->
+  <polyline fill="none" stroke="#d9534f" stroke-width="2"
+            points="60,360 160,350 260,320 360,260 460,240 560,230 660,220 760,210"/>
+  <!-- AIMRT ML off (blue) -->
+  <polyline fill="none" stroke="#0275d8" stroke-width="2"
+            points="60,360 160,345 260,300 360,240 460,210 560,200 660,190 760,180"/>
+  <!-- AIMRT ML on (green) -->
+  <polyline fill="none" stroke="#5cb85c" stroke-width="2"
+            points="60,360 160,340 260,280 360,210 460,180 560,165 660,155 760,145"/>
+
+  <rect x="520" y="80" width="230" height="70" fill="#f7f7f7" stroke="#ccc"/>
+  <line x1="535" y1="100" x2="555" y2="100" stroke="#d9534f" stroke-width="2"/>
+  <text x="560" y="104" font-family="Arial" font-size="12">Chrony default</text>
+  <line x1="535" y1="120" x2="555" y2="120" stroke="#0275d8" stroke-width="2"/>
+  <text x="560" y="124" font-family="Arial" font-size="12">AIMRT (ML off)</text>
+  <line x1="535" y1="140" x2="555" y2="140" stroke="#5cb85c" stroke-width="2"/>
+  <text x="560" y="144" font-family="Arial" font-size="12">AIMRT (ML on)</text>
+</svg>
