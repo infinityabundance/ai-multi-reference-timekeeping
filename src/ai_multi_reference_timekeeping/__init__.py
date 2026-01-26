@@ -1,6 +1,6 @@
 """Top-level package for AI-assisted multi-reference timekeeping utilities."""
 
-from .fusion import ClockUpdate, Measurement, ReferenceFusion, VirtualClock
+from .fusion import ClockUpdate, HeuristicFusion, Measurement, QualityMeasurement, ReferenceFusion, VirtualClock
 from .kalman import ClockKalmanFilter
 from .time_server import (
     GpioPulseSensor,
@@ -20,7 +20,9 @@ __all__ = [
     "ClockUpdate",
     "ClockKalmanFilter",
     "Measurement",
+    "QualityMeasurement",
     "ReferenceFusion",
+    "HeuristicFusion",
     "VirtualClock",
     "LightweightInferenceModel",
     "GpioPulseSensor",

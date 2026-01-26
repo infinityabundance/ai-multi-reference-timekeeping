@@ -194,15 +194,3 @@ This work builds on established research in time metrology, clock ensembles,
 and IEEE 1588 Precision Time Protocol, and aims to make these ideas more
 accessible to open-source and experimental systems communities.
 
-## 🚧 Status
-
-This repository accompanies a research paper and is intended to evolve.  
-Contributions, discussion, and replication studies are welcome 🤝.
-
----
-
-## 🙏 Acknowledgments
-
-This work builds on established research in time metrology, clock ensembles,
-and IEEE 1588 Precision Time Protocol, and aims to make these ideas more
-accessible to open-source and experimental systems communities.
