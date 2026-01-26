@@ -43,6 +43,158 @@ This work investigates whether **intelligent multi-reference fusion**, combined 
 
 ---
 
+## 🛰️ Time Server Scaffold (Sensors + AI Weighting)
+
+The repository now includes a **time server scaffold** in `src/ai_multi_reference_timekeeping/time_server.py`
+that lets you:
+
+- 🧩 Plug in sensor inputs (temperature, humidity, pressure, AC hum, SDR SNR, Geiger CPM, audio activity)
+- 📡 Collect references over NTP, GPS NMEA, or the hardware RTC (via `hwclock`)
+- 🔌 Listen from GPIO/USB/serial by wiring sensors with `GpioPulseSensor`, `SerialLineSensor`, or `open_line_source`
+- 🎙️ Extract AC hum, ambient audio, bird, and traffic activity features with `AudioFeatureSensor`
+- 🧠 Adjust reference variance using heuristic, linear, or online ML models
+- 📉 Estimate drift and slew from recent offsets
+- ⚖️ Support heuristic fusion via `HeuristicFusion` when quality scores are available
+- 📏 Provide TDEV/MTIE/holdover metrics and Chrony SHM integration helpers
+- 🛡️ Include sensor validation, rate limiting, and anomaly detection for spoofing and flooding mitigation
+- 🧪 Support sensor characterization and I2C environmental adapters for temperature/pressure tracking
+- ⚙️ Provide Pydantic settings, structured logging, and metrics/health endpoints
+- ✅ Safety case tracking aligned with MIL-STD-882E / DO-178C / NASA NPR 7150.2D
+- 🧭 Partition supervision and fault containment inspired by STANAG 4626
+
+Example usage:
+
+```python
+from ai_multi_reference_timekeeping.fusion import HeuristicFusion, VirtualClock
+from ai_multi_reference_timekeeping.kalman import ClockCovariance, ClockKalmanFilter, ClockState
+from ai_multi_reference_timekeeping.time_server import (
+    AudioFeatureSensor,
+    LinearInferenceModel,
+    LightweightInferenceModel,
+    MlVarianceModel,
+    NtpReference,
+    EnvironmentalSensor,
+    I2CEnvironmentalSensor,
+    SensorAggregator,
+    TimeServer,
+)
+
+kalman = ClockKalmanFilter(
+    state=ClockState(offset=0.0, drift=0.0),
+    covariance=ClockCovariance(p00=1.0, p01=0.0, p10=0.0, p11=1.0),
+    process_noise_offset=1e-4,
+    process_noise_drift=1e-6,
+)
+clock = VirtualClock(kalman_filter=kalman, fusion=HeuristicFusion())
+
+class EnvSensor:
+    def sample(self) -> dict[str, float]:
+        return {"temperature_c": 27.0, "humidity_pct": 40.0}
+
+class AudioSource:
+    def sample(self) -> tuple[list[float], int]:
+        return [0.0] * 128, 8000
+
+server = TimeServer(
+    clock=clock,
+    references=[NtpReference(name="nist")],
+    sensors=SensorAggregator(
+        EnvSensor(),
+        AudioFeatureSensor(AudioSource()),
+        EnvironmentalSensor(lambda: (27.0, 40.0, 1010.0)),
+        I2CEnvironmentalSensor(lambda bus, address: (27.1, 41.0, 1009.5), bus=1, address=0x76),
+    ),
+    inference=MlVarianceModel(feature_weights={"temperature_c": 0.02, "humidity_pct": 0.01}),
+)
+
+update, frame, drift_estimate, drift_hint = server.step(dt=1.0)
+print(update.fused_offset, drift_estimate.drift, drift_hint)
+```
+
+Chrony integration and metrics utilities:
+
+```python
+from ai_multi_reference_timekeeping.chrony import ChronyShmSample, ChronyShmWriter
+from ai_multi_reference_timekeeping.metrics import holdover_stats, mtie, tdev
+
+writer = ChronyShmWriter()
+writer.write(ChronyShmSample(offset=0.001, delay=0.0001))
+
+offsets = [0.0, 0.0005, 0.001]
+print(tdev(offsets, tau=1))
+print(mtie(offsets, window=2))
+print(holdover_stats(offsets, sample_interval=1.0))
+```
+
+Security and anomaly mitigation example:
+
+```python
+from ai_multi_reference_timekeeping.time_server import SecurityMonitor, SensorValidator
+
+validator = SensorValidator(max_samples_per_sec=2.0)
+monitor = SecurityMonitor(divergence_threshold=0.01, grid_frequency=60.0)
+print(validator.validate({"temperature_c": 20.0, "humidity_pct": 45.0}))
+print(monitor.evaluate_frame(frame))
+```
+
+Sensor characterization example:
+
+```python
+from ai_multi_reference_timekeeping.characterization import SensorCharacterization
+
+characterization = SensorCharacterization()
+characterization.update("gps", 0.0002)
+print(characterization.z_score("gps", 0.0005))
+```
+
+Configuration + structured logging example:
+
+```python
+from ai_multi_reference_timekeeping.config import TimeServerSettings
+from ai_multi_reference_timekeeping.logging_utils import configure_logging
+
+settings = TimeServerSettings()
+configure_logging(settings.logging)
+```
+
+Metrics/health exporter example:
+
+```python
+from ai_multi_reference_timekeeping.observability import HealthMonitor, MetricsExporter, MetricsTracker
+
+tracker = MetricsTracker(window_size=60)
+health = HealthMonitor(freshness_window=10.0)
+exporter = MetricsExporter(tracker, health)
+exporter.start(host="0.0.0.0", port=8000)
+```
+
+Safety case example:
+
+```python
+from ai_multi_reference_timekeeping.safety import Hazard, SafetyCase
+
+safety = SafetyCase()
+safety.register(
+    Hazard(
+        code="GPS_SPOOFING",
+        description="Spoofing detected",
+        severity=2,
+        likelihood="C",
+        mitigation="Cross-check GNSS/PTP/AC-hum",
+    )
+)
+```
+
+Partition supervision example:
+
+```python
+from ai_multi_reference_timekeeping.partitioning import PartitionSupervisor
+
+supervisor = PartitionSupervisor(max_failures=2, reboot_delay=2.0)
+```
+
+---
+
 ## 🚫 Non-goals
 
 This project explicitly does **not** aim to:
@@ -78,7 +230,14 @@ The system prioritizes **robustness, accessibility, and cost-effectiveness** for
 The notebooks in `notebooks/` are designed to run directly in **Google Colab** — no specialized hardware required.
 
 🔰 **Recommended entry point**:
-- `notebooks/00_overview.ipynb` — overview of the architecture and experiments
+- `notebooks/00_overview.ipynb` — overview of the architecture and experiments  
+  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-org/ai-multi-reference-timekeeping/blob/main/notebooks/00_overview.ipynb)
+
+✅ **Notebook test runs**:
+- `notebooks/10_test_fusion.ipynb` — validates fusion and quality weighting  
+  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-org/ai-multi-reference-timekeeping/blob/main/notebooks/10_test_fusion.ipynb)
+- `notebooks/11_test_time_server.ipynb` — validates time server + ML variance model  
+  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-org/ai-multi-reference-timekeeping/blob/main/notebooks/11_test_time_server.ipynb)
 
 Each notebook includes an **Open in Colab** link and installs dependencies automatically.
 
@@ -158,4 +317,3 @@ Contributions, discussion, and replication studies are welcome 🤝.
 This work builds on established research in time metrology, clock ensembles,
 and IEEE 1588 Precision Time Protocol, and aims to make these ideas more
 accessible to open-source and experimental systems communities.
-
