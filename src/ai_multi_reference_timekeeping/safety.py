@@ -44,7 +44,6 @@ class RiskMatrix:
 
     @classmethod
     def score(cls, severity: int, likelihood: str) -> int:
-        # Higher score indicates higher risk.
         if severity < 1 or severity > 4:
             raise ValueError("severity must be 1..4")
         if likelihood not in cls._order:
@@ -53,7 +52,6 @@ class RiskMatrix:
 
     @classmethod
     def acceptable(cls, severity: int, likelihood: str, threshold: int = 6) -> bool:
-        # Acceptable risk threshold is configurable.
         return cls.score(severity, likelihood) <= threshold
 
 
@@ -65,24 +63,20 @@ class SafetyCase:
     occurrences: list[HazardOccurrence] = field(default_factory=list)
 
     def register(self, hazard: Hazard) -> None:
-        # Register hazards before recording occurrences.
         self.hazards[hazard.code] = hazard
 
     def record(self, code: str, detail: str, timestamp: float) -> None:
-        # Record hazard occurrence with timestamp and detail.
         if code not in self.hazards:
             raise ValueError(f"Unknown hazard code {code}")
         self.occurrences.append(HazardOccurrence(code=code, detail=detail, timestamp=timestamp))
 
     def risk_summary(self) -> dict[str, int]:
-        # Provide a risk score per hazard for reporting.
         return {
             code: RiskMatrix.score(hazard.severity, hazard.likelihood)
             for code, hazard in self.hazards.items()
         }
 
     def unacceptable_hazards(self, threshold: int = 6) -> list[Hazard]:
-        # Filter hazards that exceed acceptable risk.
         return [
             hazard
             for hazard in self.hazards.values()
