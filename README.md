@@ -51,7 +51,6 @@ that lets you:
 - 🧩 Plug in sensor inputs (temperature, humidity, pressure, AC hum, SDR SNR, Geiger CPM, audio activity)
 - 📡 Collect references over NTP, GPS NMEA, or the hardware RTC (via `hwclock`)
 - 🔌 Listen from GPIO/USB/serial by wiring sensors with `GpioPulseSensor`, `SerialLineSensor`, or `open_line_source`
-- 🎙️ Extract AC hum, ambient audio, bird, and traffic activity features with `AudioFeatureSensor`
 - 🧠 Adjust reference variance using a lightweight inference model
 - 📉 Estimate drift and slew from recent offsets
 
@@ -61,8 +60,6 @@ Example usage:
 from ai_multi_reference_timekeeping.fusion import ReferenceFusion, VirtualClock
 from ai_multi_reference_timekeeping.kalman import ClockCovariance, ClockKalmanFilter, ClockState
 from ai_multi_reference_timekeeping.time_server import (
-    AudioFeatureSensor,
-    LinearInferenceModel,
     LightweightInferenceModel,
     NtpReference,
     SensorAggregator,
@@ -81,15 +78,11 @@ class EnvSensor:
     def sample(self) -> dict[str, float]:
         return {"temperature_c": 27.0, "humidity_pct": 40.0}
 
-class AudioSource:
-    def sample(self) -> tuple[list[float], int]:
-        return [0.0] * 128, 8000
-
 server = TimeServer(
     clock=clock,
     references=[NtpReference(name="nist")],
-    sensors=SensorAggregator(EnvSensor(), AudioFeatureSensor(AudioSource())),
-    inference=LinearInferenceModel(feature_weights={"temperature_c": 0.02, "humidity_pct": 0.01}),
+    sensors=SensorAggregator(EnvSensor()),
+    inference=LightweightInferenceModel(),
 )
 
 update, frame, drift_estimate, drift_hint = server.step(dt=1.0)

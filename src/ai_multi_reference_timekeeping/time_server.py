@@ -9,9 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Callable, Iterable, Mapping, MutableMapping, Protocol, Sequence
+from typing import Callable, Iterable, Mapping, MutableMapping, Protocol
 
-import math
 import socket
 import struct
 import subprocess
@@ -47,13 +46,6 @@ class SensorInput(Protocol):
         """Return a mapping of sensor fields to update."""
 
 
-class AudioSampleSource(Protocol):
-    """Protocol for microphone/line-in audio samples."""
-
-    def sample(self) -> tuple[Sequence[float], int]:
-        """Return a buffer of audio samples and its sample rate (Hz)."""
-
-
 class SensorAggregator:
     """Aggregate sensor inputs into a single frame."""
 
@@ -72,19 +64,6 @@ class ReferenceInput(Protocol):
 
     def sample(self, frame: SensorFrame) -> Measurement:
         """Return a timing offset measurement."""
-
-
-class InferenceModel(Protocol):
-    """Protocol for inference models that tune reference weighting."""
-
-    def adjusted_variance(self, base_variance: float, frame: SensorFrame, reference_name: str) -> float:
-        """Return a variance adjusted by context."""
-
-    def drift_hint(self, frame: SensorFrame) -> float:
-        """Return a drift hint based on the latest sensor frame."""
-
-    def record_frame(self, frame: SensorFrame) -> None:
-        """Persist the latest sensor frame."""
 
 
 @dataclass
@@ -121,7 +100,7 @@ class LightweightInferenceModel:
         self._gps_lock_penalty = gps_lock_penalty
         self._last_frame: SensorFrame | None = None
 
-    def adjusted_variance(self, base_variance: float, frame: SensorFrame, reference_name: str = "") -> float:
+    def adjusted_variance(self, base_variance: float, frame: SensorFrame) -> float:
         """Return a variance adjusted by the contextual sensor conditions."""
 
         if base_variance <= 0:
@@ -148,8 +127,6 @@ class LightweightInferenceModel:
             penalty += max(0.0, 30.0 - frame.radio_snr_db) * self._radio_coeff / 30.0
         if frame.gps_lock is False:
             penalty *= self._gps_lock_penalty
-        if reference_name:
-            penalty *= 1.0
 
         return base_variance * penalty
 
@@ -169,41 +146,6 @@ class LightweightInferenceModel:
     def record_frame(self, frame: SensorFrame) -> None:
         """Persist the latest sensor frame for future deltas."""
 
-        self._last_frame = frame
-
-
-class LinearInferenceModel:
-    """Tiny linear model for variance scaling and drift hints."""
-
-    def __init__(
-        self,
-        feature_weights: Mapping[str, float] | None = None,
-        drift_weights: Mapping[str, float] | None = None,
-        reference_bias: Mapping[str, float] | None = None,
-        bias: float = 0.0,
-    ) -> None:
-        self._feature_weights = dict(feature_weights or {})
-        self._drift_weights = dict(drift_weights or {})
-        self._reference_bias = dict(reference_bias or {})
-        self._bias = bias
-        self._last_frame: SensorFrame | None = None
-
-    def adjusted_variance(self, base_variance: float, frame: SensorFrame, reference_name: str = "") -> float:
-        if base_variance <= 0:
-            raise ValueError("base_variance must be positive")
-        score = self._bias + self._reference_bias.get(reference_name, 0.0)
-        for feature, weight in self._feature_weights.items():
-            score += weight * _feature_value(frame, feature)
-        scale = 1.0 + 1.0 / (1.0 + math.exp(-score))
-        return base_variance * scale
-
-    def drift_hint(self, frame: SensorFrame) -> float:
-        hint = 0.0
-        for feature, weight in self._drift_weights.items():
-            hint += weight * _feature_value(frame, feature)
-        return hint
-
-    def record_frame(self, frame: SensorFrame) -> None:
         self._last_frame = frame
 
 
@@ -356,43 +298,6 @@ class GpioPulseSensor:
         return {self._field_name: frequency}
 
 
-class AudioFeatureSensor:
-    """Extracts AC hum, ambient audio, and activity bands from audio samples."""
-
-    def __init__(
-        self,
-        sample_source: AudioSampleSource,
-        hum_candidates: Sequence[float] = (50.0, 60.0),
-        bird_band: tuple[float, float] = (2000.0, 8000.0),
-        traffic_band: tuple[float, float] = (50.0, 300.0),
-    ) -> None:
-        self._source = sample_source
-        self._hum_candidates = hum_candidates
-        self._bird_band = bird_band
-        self._traffic_band = traffic_band
-
-    def sample(self) -> Mapping[str, float | None]:
-        samples, sample_rate = self._source.sample()
-        if not samples:
-            return {"ambient_audio_db": None, "ac_hum_hz": None, "bird_activity": None, "traffic_activity": None}
-
-        rms = math.sqrt(sum(sample * sample for sample in samples) / len(samples))
-        ambient_db = 20.0 * math.log10(max(rms, 1e-12))
-
-        hum_levels = {freq: _goertzel(samples, sample_rate, freq) for freq in self._hum_candidates}
-        ac_hum_hz = max(hum_levels, key=hum_levels.get) if hum_levels else None
-
-        bird_energy = _band_energy(samples, sample_rate, self._bird_band)
-        traffic_energy = _band_energy(samples, sample_rate, self._traffic_band)
-
-        return {
-            "ambient_audio_db": ambient_db,
-            "ac_hum_hz": ac_hum_hz,
-            "bird_activity": bird_energy,
-            "traffic_activity": traffic_energy,
-        }
-
-
 class TimeServer:
     """Coordinate sensors, references, and the virtual clock."""
 
@@ -401,7 +306,7 @@ class TimeServer:
         clock: VirtualClock,
         references: Iterable[ReferenceInput],
         sensors: SensorAggregator | None = None,
-        inference: InferenceModel | None = None,
+        inference: LightweightInferenceModel | None = None,
         drift_detector: SlewDriftDetector | None = None,
     ) -> None:
         self._clock = clock
@@ -415,7 +320,7 @@ class TimeServer:
         measurements = []
         for reference in self._references:
             measurement = reference.sample(frame)
-            adjusted_variance = self._inference.adjusted_variance(measurement.variance, frame, measurement.name)
+            adjusted_variance = self._inference.adjusted_variance(measurement.variance, frame)
             measurements.append(
                 Measurement(
                     name=measurement.name,
@@ -466,43 +371,3 @@ def open_line_source(path: str) -> Callable[[], str]:
 
     stream = open(path, "r", encoding="ascii", errors="ignore", buffering=1)
     return stream.readline
-
-
-def _feature_value(frame: SensorFrame, name: str) -> float:
-    value = getattr(frame, name, None)
-    if value is None:
-        return 0.0
-    if isinstance(value, bool):
-        return 1.0 if value else 0.0
-    return float(value)
-
-
-def _goertzel(samples: Sequence[float], sample_rate: int, frequency: float) -> float:
-    if sample_rate <= 0:
-        raise ValueError("sample_rate must be positive")
-    if frequency <= 0:
-        return 0.0
-    k = int(0.5 + (len(samples) * frequency) / sample_rate)
-    omega = (2.0 * math.pi * k) / len(samples)
-    coeff = 2.0 * math.cos(omega)
-    s_prev = 0.0
-    s_prev2 = 0.0
-    for sample in samples:
-        s = sample + coeff * s_prev - s_prev2
-        s_prev2 = s_prev
-        s_prev = s
-    power = s_prev2**2 + s_prev**2 - coeff * s_prev * s_prev2
-    return power
-
-
-def _band_energy(samples: Sequence[float], sample_rate: int, band: tuple[float, float]) -> float:
-    low, high = band
-    if low <= 0 or high <= low:
-        return 0.0
-    step = max(1.0, (high - low) / 5.0)
-    energy = 0.0
-    freq = low
-    while freq <= high:
-        energy += _goertzel(samples, sample_rate, freq)
-        freq += step
-    return energy

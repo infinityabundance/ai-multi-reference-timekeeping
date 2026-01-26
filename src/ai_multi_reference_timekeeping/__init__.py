@@ -3,9 +3,7 @@
 from .fusion import ClockUpdate, Measurement, ReferenceFusion, VirtualClock
 from .kalman import ClockKalmanFilter
 from .time_server import (
-    AudioFeatureSensor,
     GpioPulseSensor,
-    LinearInferenceModel,
     LightweightInferenceModel,
     NmeaGpsReference,
     NtpReference,
@@ -25,8 +23,6 @@ __all__ = [
     "ReferenceFusion",
     "VirtualClock",
     "LightweightInferenceModel",
-    "LinearInferenceModel",
-    "AudioFeatureSensor",
     "GpioPulseSensor",
     "NmeaGpsReference",
     "NtpReference",

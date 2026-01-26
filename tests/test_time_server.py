@@ -3,8 +3,6 @@ from __future__ import annotations
 from ai_multi_reference_timekeeping.fusion import Measurement, ReferenceFusion, VirtualClock
 from ai_multi_reference_timekeeping.kalman import ClockCovariance, ClockKalmanFilter, ClockState
 from ai_multi_reference_timekeeping.time_server import (
-    AudioFeatureSensor,
-    LinearInferenceModel,
     LightweightInferenceModel,
     SensorAggregator,
     SensorFrame,
@@ -64,22 +62,3 @@ def test_time_server_step_reports_drift_hint() -> None:
     assert update.fused_offset == 0.2
     assert drift_estimate.samples == 1
     assert drift_hint == 0.0
-
-
-def test_linear_inference_model_scales_variance() -> None:
-    model = LinearInferenceModel(feature_weights={"temperature_c": 0.5}, reference_bias={"ref": 0.1})
-    frame = SensorFrame(timestamp=0.0, temperature_c=10.0)
-    scaled = model.adjusted_variance(1.0, frame, "ref")
-    assert scaled > 1.0
-
-
-def test_audio_feature_sensor_extracts_activity() -> None:
-    class ToneSource:
-        def sample(self) -> tuple[list[float], int]:
-            sample_rate = 8000
-            samples = [0.5] * 128
-            return samples, sample_rate
-
-    sensor = AudioFeatureSensor(ToneSource())
-    features = sensor.sample()
-    assert features["ambient_audio_db"] is not None
