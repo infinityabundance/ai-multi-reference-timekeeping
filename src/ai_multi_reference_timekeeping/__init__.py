@@ -2,6 +2,19 @@
 
 from .fusion import ClockUpdate, Measurement, ReferenceFusion, VirtualClock
 from .kalman import ClockKalmanFilter
+from .time_server import (
+    GpioPulseSensor,
+    LightweightInferenceModel,
+    NmeaGpsReference,
+    NtpReference,
+    RtcReference,
+    SensorAggregator,
+    SensorFrame,
+    SerialLineSensor,
+    SlewDriftDetector,
+    TimeServer,
+    open_line_source,
+)
 
 __all__ = [
     "ClockUpdate",
@@ -9,4 +22,15 @@ __all__ = [
     "Measurement",
     "ReferenceFusion",
     "VirtualClock",
+    "LightweightInferenceModel",
+    "GpioPulseSensor",
+    "NmeaGpsReference",
+    "NtpReference",
+    "RtcReference",
+    "SensorAggregator",
+    "SensorFrame",
+    "SerialLineSensor",
+    "SlewDriftDetector",
+    "TimeServer",
+    "open_line_source",
 ]
