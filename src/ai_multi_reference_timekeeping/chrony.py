@@ -7,7 +7,6 @@ import mmap
 import os
 import struct
 import time
-import zlib
 
 
 @dataclass
@@ -26,11 +25,8 @@ class ChronyShmWriter:
 
     def __init__(self, path: str = "/dev/shm/chrony_shm0") -> None:
         self._path = path
-        self._size = 100
-        # THREAD-SAFETY: _mmap and _last_write are not thread-safe; a single
-        # writer thread should own SHM writes to avoid partial writes.
+        self._size = 96
         self._mmap: mmap.mmap | None = None
-        self._last_write: float | None = None
 
     def _ensure(self) -> mmap.mmap:
         if self._mmap is not None:
@@ -46,10 +42,8 @@ class ChronyShmWriter:
         now = time.time()
         seconds = int(now)
         nanos = int((now - seconds) * 1e9)
-        crc_payload = struct.pack("!dd", sample.offset, sample.delay)
-        checksum = zlib.crc32(crc_payload)
         packed = struct.pack(
-            "!IIIdddddiiiI",
+            "!IIIddddiiii",
             0,  # mode/status placeholders
             1,  # count
             0,  # valid flag
@@ -61,15 +55,10 @@ class ChronyShmWriter:
             sample.leap,
             sample.status,
             sample.mode,
-            checksum,
+            0,
         )
         shm.seek(0)
         shm.write(packed[: self._size])
-        self._last_write = time.time()
-
-    @property
-    def last_write(self) -> float | None:
-        return self._last_write
 
     def close(self) -> None:
         if self._mmap is not None:
