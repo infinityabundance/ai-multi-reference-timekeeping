@@ -62,4 +62,4 @@ The next phase of this research involves mapping MRT frames to non-Euclidean tem
 ## 8. Bibliography
 1. **Lamport, L. (1978).** "Time, Clocks, and the Ordering of Events in a Distributed System."
 2. **Mills, D. L. (1991).** "Internet Time Synchronization: The Network Time Protocol."
-3. **De Beer, R. (2026).** "An AI-Assisted Multi-Reference Timekeeping Architecture for Commodity Networks." [Zenodo DOI Placeholder]
+3. **De Beer, R. (2026).** "An AI-Assisted Multi-Reference Timekeeping Architecture for Commodity Networks." [[Zenodo DOI]](https://doi.org/10.5281/zenodo.18366050)
