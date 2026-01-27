@@ -1,6 +1,5 @@
 #include "aimrt/logging.hpp"
 
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -15,8 +14,6 @@ struct LoggingState {
     LogLevel level = LogLevel::kInfo;
     bool json = true;
     std::optional<std::string> log_file = std::nullopt;
-    int max_bytes = 0;
-    int backup_count = 0;
     std::unique_ptr<std::ostream> file_stream;
     std::mutex mutex;
 };
@@ -57,44 +54,6 @@ std::string level_name(LogLevel level) {
     return "INFO";
 }
 
-void rotate_logs(LoggingState& log_state) {
-    if (!log_state.log_file.has_value()) {
-        return;
-    }
-    if (log_state.max_bytes <= 0 || log_state.backup_count <= 0) {
-        return;
-    }
-
-    const std::filesystem::path base_path(*log_state.log_file);
-    std::error_code ec;
-    if (!std::filesystem::exists(base_path, ec)) {
-        return;
-    }
-
-    const auto size = std::filesystem::file_size(base_path, ec);
-    if (ec || size < static_cast<std::uintmax_t>(log_state.max_bytes)) {
-        return;
-    }
-
-    log_state.file_stream.reset();
-
-    for (int index = log_state.backup_count - 1; index >= 1; --index) {
-        std::filesystem::path source = base_path;
-        source += "." + std::to_string(index);
-        if (!std::filesystem::exists(source, ec)) {
-            continue;
-        }
-        std::filesystem::path destination = base_path;
-        destination += "." + std::to_string(index + 1);
-        std::filesystem::rename(source, destination, ec);
-    }
-
-    std::filesystem::path rotated = base_path;
-    rotated += ".1";
-    std::filesystem::rename(base_path, rotated, ec);
-    log_state.file_stream = std::make_unique<std::ofstream>(base_path, std::ios::app);
-}
-
 }  // namespace
 
 Logger::Logger(std::string name) : name_(std::move(name)) {}
@@ -106,7 +65,6 @@ void Logger::log(LogLevel level, const std::string& message,
         return;
     }
     std::lock_guard<std::mutex> guard(log_state.mutex);
-    rotate_logs(log_state);
     std::ostream* output = &std::cout;
     if (log_state.file_stream) {
         output = log_state.file_stream.get();
@@ -154,8 +112,6 @@ void configure_logging(const LoggingConfig& config) {
     log_state.level = parse_level(config.level);
     log_state.json = config.json;
     log_state.log_file = config.log_file;
-    log_state.max_bytes = config.max_bytes;
-    log_state.backup_count = config.backup_count;
     log_state.file_stream.reset();
 
     if (config.log_file.has_value()) {

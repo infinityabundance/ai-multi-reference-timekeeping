@@ -5,8 +5,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <array>
-#include <cstdint>
 #include <cstring>
 #include <stdexcept>
 
@@ -46,35 +44,6 @@ void ChronyShmWriter::write(const ChronyShmSample& sample) {
     const uint32_t seconds = static_cast<uint32_t>(now);
     const uint32_t nanos = static_cast<uint32_t>((now - seconds) * 1e9);
 
-    auto crc32 = [](const uint8_t* data, size_t length) {
-        uint32_t crc = 0xFFFFFFFFu;
-        for (size_t i = 0; i < length; ++i) {
-            crc ^= data[i];
-            for (int bit = 0; bit < 8; ++bit) {
-                const uint32_t mask = -(crc & 1u);
-                crc = (crc >> 1) ^ (0xEDB88320u & mask);
-            }
-        }
-        return ~crc;
-    };
-
-    auto encode_be_double = [](double value, std::array<uint8_t, 8>& out) {
-        std::uint64_t bits = 0;
-        std::memcpy(&bits, &value, sizeof(bits));
-        for (int i = 0; i < 8; ++i) {
-            out[i] = static_cast<uint8_t>((bits >> (56 - i * 8)) & 0xFFu);
-        }
-    };
-
-    std::array<uint8_t, 16> crc_payload{};
-    std::array<uint8_t, 8> offset_bytes{};
-    std::array<uint8_t, 8> delay_bytes{};
-    encode_be_double(sample.offset, offset_bytes);
-    encode_be_double(sample.delay, delay_bytes);
-    std::memcpy(crc_payload.data(), offset_bytes.data(), offset_bytes.size());
-    std::memcpy(crc_payload.data() + offset_bytes.size(), delay_bytes.data(), delay_bytes.size());
-    const uint32_t checksum = crc32(crc_payload.data(), crc_payload.size());
-
     struct ChronyPayload {
         uint32_t mode;
         uint32_t count;
@@ -101,7 +70,7 @@ void ChronyShmWriter::write(const ChronyShmSample& sample) {
     payload.leap = sample.leap;
     payload.status = sample.status;
     payload.mode2 = sample.mode;
-    payload.checksum = checksum;
+    payload.checksum = static_cast<uint32_t>(sample.offset * 1e6) ^ static_cast<uint32_t>(sample.delay * 1e6);
 
     std::memset(map, 0, size_);
     std::memcpy(map, &payload, sizeof(payload));

@@ -31,11 +31,9 @@ class PartitionSupervisor:
         self._partitions: dict[str, PartitionState] = {}
 
     def state(self, name: str) -> PartitionState:
-        # Lazily create partition state records.
         return self._partitions.setdefault(name, PartitionState(name=name))
 
     def record_failure(self, name: str) -> PartitionState:
-        # Track failures and schedule a reboot when threshold is exceeded.
         state = self.state(name)
         state.failures += 1
         state.last_failure = time.time()
@@ -45,7 +43,6 @@ class PartitionSupervisor:
         return state
 
     def record_success(self, name: str) -> PartitionState:
-        # Reset failure counters after a successful sample.
         state = self.state(name)
         state.failures = 0
         state.last_failure = None
@@ -54,14 +51,12 @@ class PartitionSupervisor:
         return state
 
     def should_reboot(self, name: str) -> bool:
-        # A reboot is due if the scheduled time has been reached.
         state = self.state(name)
         if state.reboot_at is None:
             return False
         return time.time() >= state.reboot_at
 
     def reboot(self, name: str) -> PartitionState:
-        # Simulate a reboot by clearing failure state.
         state = self.state(name)
         state.failures = 0
         state.last_failure = None
