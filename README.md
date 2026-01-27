@@ -1,6 +1,16 @@
 # 🕒 ai-multi-reference-timekeeping
 **AI-Assisted Multi-Reference Timekeeping for Commodity Networks**
 
+<p align="center">
+  <a href="https://github.com/infinityabundance/ai-multi-reference-timekeeping">
+    <img
+      src="assets/aimrt.png"
+      alt="AI Multi-Reference Timekeeping Logo"
+      width="420"
+    />
+  </a>
+</p>
+
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Zenodo DOI](https://img.shields.io/badge/DOI-Zenodo-inactive.svg)](https://zenodo.org/)
 [![Open In Colab](https://img.shields.io/badge/Open%20in-Colab-orange.svg)](https://colab.research.google.com/)
