@@ -6,7 +6,7 @@
     <img
       src="assets/aimrt.png"
       alt="AI Multi-Reference Timekeeping Logo"
-      width="420"
+      width="800"
     />
   </a>
 </p>
