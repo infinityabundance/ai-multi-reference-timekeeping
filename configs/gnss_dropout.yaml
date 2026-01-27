@@ -1,0 +1,19 @@
+name: gnss_dropout_experiment
+description: GNSS dropout vs fused clock evaluation
+sampling_interval_s: 1.0
+duration_s: 600
+dropout:
+  start_s: 180
+  end_s: 420
+references:
+  - name: gnss
+    variance: 1.0e-4
+  - name: ptp
+    variance: 1.0e-3
+  - name: rtc
+    variance: 5.0e-3
+fusion:
+  strategy: heuristic
+metrics:
+  tdev_tau: 1
+  mtie_window: 10
