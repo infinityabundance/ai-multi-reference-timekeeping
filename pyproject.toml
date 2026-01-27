@@ -14,5 +14,8 @@ dependencies = ["pydantic>=2.6", "pydantic-settings>=2.2"]
 [project.optional-dependencies]
 test = ["pytest>=7.4"]
 
+[project.scripts]
+aimrt = "ai_multi_reference_timekeeping.cli:main"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
