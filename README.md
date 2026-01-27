@@ -28,6 +28,43 @@ The goal is to improve **practical packet-level synchronization** on commodity h
 
 ---
 
+## 📐 Theoretical Foundation
+
+This project formalizes timekeeping by treating temporal progression as a relativistic coordinate system. Instead of a single linear clock, we define a **Temporal State Vector** where time is mapped across multiple reference frames.
+
+### 1. The Reference Frame Model
+Each reference frame $F_i$ (e.g., an AI agent's internal simulation clock) is defined relative to the Master Reference Frame ($M$) by the tuple:
+
+$$F_i = (t_{0,i}, \phi_i, \chi_i)$$
+
+Where:
+- $t_{0,i}$: The **Temporal Anchor** (epoch offset).
+- $\phi_i$: The **Dilation Factor** (relative clock speed).
+- $\chi_i(t)$: The **Drift Function** (stochastic or systemic error).
+
+
+
+### 2. Forward Transform
+To map Master Time ($T_M$) to a specific Local Reference ($t_i$), we apply the following transform:
+
+$$t_i = \phi_i (T_M - t_{0,i}) + \chi_i(T_M)$$
+
+### 3. Inter-Frame Transformation
+To translate directly between two non-master frames (Frame $A$ and Frame $B$) without intermediary calculation, we use the composed transform:
+
+$$t_B = \frac{\phi_B}{\phi_A} t_A + \phi_B(t_{0,A} - t_{0,B})$$
+
+This allows the system to determine the **Relative Temporal Velocity** ($\frac{\phi_B}{\phi_A}$) between two disparate AI contexts.
+
+
+
+### 4. Dynamic Time Warping (Non-Linear Dilation)
+In scenarios where processing speed varies (e.g., high-inference loads or hardware throttling), $\phi$ becomes a time-dependent function $\phi(t)$. The local time is then derived via integration:
+
+$$t_i = \int_{t_{0,i}}^{T_M} \phi_i(\tau) \, d\tau$$
+
+---
+
 ## 🎯 Motivation
 
 High-precision time synchronization is increasingly important for distributed systems, including:
