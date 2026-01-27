@@ -1,6 +1,16 @@
 # 🕒 ai-multi-reference-timekeeping
 **AI-Assisted Multi-Reference Timekeeping for Commodity Networks**
 
+<p align="center">
+  <a href="https://github.com/infinityabundance/ai-multi-reference-timekeeping">
+    <img
+      src="assets/aimrt.png"
+      alt="AI Multi-Reference Timekeeping Logo"
+      width="800"
+    />
+  </a>
+</p>
+
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Zenodo DOI](https://img.shields.io/badge/DOI-Zenodo-inactive.svg)](https://zenodo.org/)
 [![Open In Colab](https://img.shields.io/badge/Open%20in-Colab-orange.svg)](https://colab.research.google.com/)
@@ -15,6 +25,62 @@ This repository contains the reference implementation and reproducibility artifa
 This project explores a low-cost, AI-assisted approach to time synchronization that synthesizes a **virtual master clock** from multiple imperfect timing references (e.g., GNSS 🌍, PTP 🔗, NTP 🌐) using classical estimation techniques augmented with lightweight machine learning 🤖.
 
 The goal is to improve **practical packet-level synchronization** on commodity hardware — without requiring atomic clocks ⚛️ or specialized time cards.
+
+---
+
+---
+
+## 🔬 Scientific Foundation
+
+This project is grounded in **Relativistic Temporal Logic** and **Distributed Systems Theory**. We move beyond standard linear timekeeping to provide a multi-reference framework designed for the next generation of AI agents.
+
+* **Theory & Proofs:** For a deep dive into the mathematical transforms, dilation matrices, and causal manifolds, please see:
+    👉 **[RESEARCH.md](./RESEARCH.md)** 📑
+
+* **Academic Citation:** If you are using this framework for peer-reviewed research, please refer to the [Citation section](#-citation) below.
+
+
+
+---
+> ### 📖 Research Deep-Dive
+> We have formalized the mechanics of **Computational Dilation** and **Temporal Anchoring**. 
+> To explore the underlying physics and math of this implementation, check out our **[Research Paper Summary](./RESEARCH.md)**.
+---
+
+## 📐 Theoretical Foundation
+
+This project formalizes timekeeping by treating temporal progression as a relativistic coordinate system. Instead of a single linear clock, we define a **Temporal State Vector** where time is mapped across multiple reference frames.
+
+### 1. The Reference Frame Model
+Each reference frame $F_i$ (e.g., an AI agent's internal simulation clock) is defined relative to the Master Reference Frame ($M$) by the tuple:
+
+$$F_i = (t_{0,i}, \phi_i, \chi_i)$$
+
+Where:
+- $t_{0,i}$: The **Temporal Anchor** (epoch offset).
+- $\phi_i$: The **Dilation Factor** (relative clock speed).
+- $\chi_i(t)$: The **Drift Function** (stochastic or systemic error).
+
+
+
+### 2. Forward Transform
+To map Master Time ($T_M$) to a specific Local Reference ($t_i$), we apply the following transform:
+
+$$t_i = \phi_i (T_M - t_{0,i}) + \chi_i(T_M)$$
+
+### 3. Inter-Frame Transformation
+To translate directly between two non-master frames (Frame $A$ and Frame $B$) without intermediary calculation, we use the composed transform:
+
+$$t_B = \frac{\phi_B}{\phi_A} t_A + \phi_B(t_{0,A} - t_{0,B})$$
+
+This allows the system to determine the **Relative Temporal Velocity** ($\frac{\phi_B}{\phi_A}$) between two disparate AI contexts.
+
+
+
+### 4. Dynamic Time Warping (Non-Linear Dilation)
+In scenarios where processing speed varies (e.g., high-inference loads or hardware throttling), $\phi$ becomes a time-dependent function $\phi(t)$. The local time is then derived via integration:
+
+$$t_i = \int_{t_{0,i}}^{T_M} \phi_i(\tau) \, d\tau$$
 
 ---
 
@@ -43,12 +109,6 @@ This work investigates whether **intelligent multi-reference fusion**, combined 
 
 ---
 
-## 🎯 Design Philosophy
-
-- **ML only touches variance**: the AI layer adjusts confidence, not raw timestamps, to preserve auditability.
-- **Linear models by default**: simple, bounded transforms are easier to validate and explain than deep networks.
-- **Safety clamps**: bounds, rate limits, and hazard logging are enforced to prevent runaway updates or silent failure.
-
 ## 🛰️ Time Server Scaffold (Sensors + AI Weighting)
 
 The repository now includes a **time server scaffold** in `src/ai_multi_reference_timekeeping/time_server.py`
@@ -57,30 +117,17 @@ that lets you:
 - 🧩 Plug in sensor inputs (temperature, humidity, pressure, AC hum, SDR SNR, Geiger CPM, audio activity)
 - 📡 Collect references over NTP, GPS NMEA, or the hardware RTC (via `hwclock`)
 - 🔌 Listen from GPIO/USB/serial by wiring sensors with `GpioPulseSensor`, `SerialLineSensor`, or `open_line_source`
-- 🎙️ Extract AC hum, ambient audio, bird, and traffic activity features with `AudioFeatureSensor`
-- 🧠 Adjust reference variance using heuristic, linear, or online ML models
+- 🧠 Adjust reference variance using a lightweight inference model
 - 📉 Estimate drift and slew from recent offsets
-- ⚖️ Support heuristic fusion via `HeuristicFusion` when quality scores are available
-- 📏 Provide TDEV/MTIE/holdover metrics and Chrony SHM integration helpers
-- 🛡️ Include sensor validation, rate limiting, and anomaly detection for spoofing and flooding mitigation
-- 🧪 Support sensor characterization and I2C environmental adapters for temperature/pressure tracking
-- ⚙️ Provide Pydantic settings, structured logging, and metrics/health endpoints
-- ✅ Safety case tracking aligned with MIL-STD-882E / DO-178C / NASA NPR 7150.2D
-- 🧭 Partition supervision and fault containment inspired by STANAG 4626
 
 Example usage:
 
 ```python
-from ai_multi_reference_timekeeping.fusion import HeuristicFusion, VirtualClock
+from ai_multi_reference_timekeeping.fusion import ReferenceFusion, VirtualClock
 from ai_multi_reference_timekeeping.kalman import ClockCovariance, ClockKalmanFilter, ClockState
 from ai_multi_reference_timekeeping.time_server import (
-    AudioFeatureSensor,
-    LinearInferenceModel,
     LightweightInferenceModel,
-    MlVarianceModel,
     NtpReference,
-    EnvironmentalSensor,
-    I2CEnvironmentalSensor,
     SensorAggregator,
     TimeServer,
 )
@@ -91,359 +138,22 @@ kalman = ClockKalmanFilter(
     process_noise_offset=1e-4,
     process_noise_drift=1e-6,
 )
-clock = VirtualClock(kalman_filter=kalman, fusion=HeuristicFusion())
+clock = VirtualClock(kalman_filter=kalman, fusion=ReferenceFusion())
 
 class EnvSensor:
     def sample(self) -> dict[str, float]:
         return {"temperature_c": 27.0, "humidity_pct": 40.0}
 
-class AudioSource:
-    def sample(self) -> tuple[list[float], int]:
-        return [0.0] * 128, 8000
-
 server = TimeServer(
     clock=clock,
     references=[NtpReference(name="nist")],
-    sensors=SensorAggregator(
-        EnvSensor(),
-        AudioFeatureSensor(AudioSource()),
-        EnvironmentalSensor(lambda: (27.0, 40.0, 1010.0)),
-        I2CEnvironmentalSensor(lambda bus, address: (27.1, 41.0, 1009.5), bus=1, address=0x76),
-    ),
-    inference=MlVarianceModel(feature_weights={"temperature_c": 0.02, "humidity_pct": 0.01}),
+    sensors=SensorAggregator(EnvSensor()),
+    inference=LightweightInferenceModel(),
 )
 
 update, frame, drift_estimate, drift_hint = server.step(dt=1.0)
 print(update.fused_offset, drift_estimate.drift, drift_hint)
 ```
-
-## ✅ Quickstart API (recommended)
-
-Use the `build_time_server` API to assemble a ready-to-run server with
-observability and partition supervision configured:
-
-```python
-from ai_multi_reference_timekeeping.api import build_time_server
-from ai_multi_reference_timekeeping.time_server import NtpReference, SensorAggregator, SensorInput
-
-class EnvSensor:
-    def sample(self) -> dict[str, float]:
-        return {"temperature_c": 27.0, "humidity_pct": 40.0}
-
-runtime = build_time_server(
-    references=[NtpReference(name="nist")],
-    sensors=[EnvSensor()],
-)
-server = runtime.server
-update, frame, drift, drift_hint = server.step(1.0)
-```
-
----
-
-## 🚀 C++ Implementation (High-Performance Core)
-
-The project now ships with a C++20 implementation of the full timekeeping stack for higher throughput and lower
-latency in production deployments. The C++ code mirrors the Python architecture while keeping the logic explicit,
-auditable, and verbose for safety-driven reviews.
-
-### Build + Test
-
-```bash
-cmake -S . -B build
-cmake --build build
-ctest --test-dir build
-```
-
-### Example (C++)
-
-```cpp
-#include "aimrt/api.hpp"
-#include "aimrt/time_server.hpp"
-
-int main() {
-    auto runtime = aimrt::build_time_server({}, {});
-    auto [update, frame, drift, drift_hint] = runtime.server->step(1.0);
-    (void)frame;
-    (void)drift;
-    (void)drift_hint;
-    return 0;
-}
-```
-
-### C++ Layout
-
-```
-cpp/
-  include/aimrt/    # Public headers
-  src/              # Core implementation
-  tests/            # Lightweight unit tests
-```
-
-## 🧩 API Reference (stable entry points)
-
-**Stable APIs**:
-- `TimeServer`
-- `VirtualClock`
-- Reference classes (`NtpReference`, `NmeaGpsReference`, `RtcReference`)
-- `build_time_server` (recommended facade)
-
-**Example**:
-
-```python
-from ai_multi_reference_timekeeping.api import build_time_server
-from ai_multi_reference_timekeeping.time_server import NtpReference
-
-runtime = build_time_server(
-    references=[NtpReference(name="nist")],
-    sensors=[],
-)
-runtime.server.step(1.0)
-```
-
-## 🛠️ Daemon Architecture
-
-Run the server as a long-lived process:
-
-```python
-from ai_multi_reference_timekeeping.daemon import TimeServerDaemon, DaemonConfig
-from ai_multi_reference_timekeeping.api import build_time_server
-from ai_multi_reference_timekeeping.time_server import NtpReference
-
-runtime = build_time_server(
-    references=[NtpReference(name="nist")],
-    sensors=[],
-)
-daemon = TimeServerDaemon(runtime, DaemonConfig(step_interval_s=1.0, chrony_enabled=True))
-daemon.run()
-```
-
-**API stability note**: The public API currently consists of `TimeServer`, `VirtualClock`, and reference classes. Other modules may change.
-
-## 📉 MTIE Hero Plot (GNSS dropout vs fused clock)
-
-Below is a placeholder for the MTIE plot generated in `notebooks/12_gnss_dropout_mtie.ipynb` using
-`configs/gnss_dropout.yaml`. Use the notebook to render and replace this image when running with
-matplotlib available.
-
-![MTIE GNSS dropout plot](docs/mtie_gnss_dropout.png)
-
-## 📊 Ablation Plot (Baseline vs ML)
-
-The ablation below compares Chrony default, AIMRT without ML, and AIMRT with ML
-under a GNSS dropout scenario. This plot is a placeholder; regenerate using
-the ablation notebook/script when matplotlib is available.
-
-![MTIE ablation plot](docs/mtie_ablation.svg)
-
-Chrony integration and metrics utilities:
-
-```python
-from ai_multi_reference_timekeeping.chrony import ChronyShmSample, ChronyShmWriter
-from ai_multi_reference_timekeeping.metrics import holdover_stats, mtie, tdev
-
-writer = ChronyShmWriter()
-writer.write(ChronyShmSample(offset=0.001, delay=0.0001))
-
-offsets = [0.0, 0.0005, 0.001]
-print(tdev(offsets, tau=1))
-print(mtie(offsets, window=2))
-print(holdover_stats(offsets, sample_interval=1.0))
-```
-
-Security and anomaly mitigation example:
-
-```python
-from ai_multi_reference_timekeeping.time_server import SecurityMonitor, SensorValidator
-
-validator = SensorValidator(max_samples_per_sec=2.0)
-monitor = SecurityMonitor(divergence_threshold=0.01, grid_frequency=60.0)
-print(validator.validate({"temperature_c": 20.0, "humidity_pct": 45.0}))
-print(monitor.evaluate_frame(frame))
-```
-
-Sensor characterization example:
-
-```python
-from ai_multi_reference_timekeeping.characterization import SensorCharacterization
-
-characterization = SensorCharacterization()
-characterization.update("gps", 0.0002)
-print(characterization.z_score("gps", 0.0005))
-```
-
-Configuration + structured logging example:
-
-```python
-from ai_multi_reference_timekeeping.config import TimeServerSettings
-from ai_multi_reference_timekeeping.logging_utils import configure_logging
-
-settings = TimeServerSettings()
-configure_logging(settings.logging)
-```
-
-Metrics/health exporter example:
-
-```python
-from ai_multi_reference_timekeeping.observability import HealthMonitor, MetricsExporter, MetricsTracker
-
-tracker = MetricsTracker(window_size=60)
-health = HealthMonitor(freshness_window=10.0)
-exporter = MetricsExporter(tracker, health)
-exporter.start(host="0.0.0.0", port=8000)
-```
-
-Safety case example:
-
-```python
-from ai_multi_reference_timekeeping.safety import Hazard, SafetyCase
-
-safety = SafetyCase()
-safety.register(
-    Hazard(
-        code="GPS_SPOOFING",
-        description="Spoofing detected",
-        severity=2,
-        likelihood="C",
-        mitigation="Cross-check GNSS/PTP/AC-hum",
-    )
-)
-```
-
-Partition supervision example:
-
-```python
-from ai_multi_reference_timekeeping.partitioning import PartitionSupervisor
-
-supervisor = PartitionSupervisor(max_failures=2, reboot_delay=2.0)
-```
-
----
-
-## 🧠 ML Logic (How the AI weighting works)
-
-The ML pipeline is intentionally lightweight and auditable:
-
-1. **Feature extraction**  
-   Sensor inputs are normalized through `SensorValidator` and mapped into a `SensorFrame`. Each field (e.g., temperature, humidity, AC hum frequency/phase) represents a context signal that can impact reference stability.  
-2. **Variance scaling (adaptive weighting)**  
-   - `LightweightInferenceModel` uses heuristic penalties (temperature drift, AC hum deviation, audio activity) to scale variance.  
-   - `LinearInferenceModel` applies a logistic transform to feature-weighted scores.  
-   - `MlVarianceModel` applies bounded online updates and residual characterization to adjust reference bias.  
-3. **Fusion and update**  
-   Weighted measurements are fused via `HeuristicFusion`, and the Kalman filter updates the virtual clock.  
-4. **Safety hooks**  
-   Security alerts can record hazards via `SafetyCase`, and partition supervision isolates failing sensors.
-
-This design emphasizes **explicit, bounded, and logged** updates to support traceability and operational safety.
-
----
-
-## ⚠️ Known limitations and roadmap
-
-The following items are acknowledged gaps; they are explicitly tracked and should be addressed before claiming production readiness:
-
-1. No long-duration integration/performance tests or 24h memory-leak checks.  
-2. Limited thread-safety verification beyond a coarse lock in `TimeServer`.  
-3. No property-based or fuzz testing for edge cases.  
-4. Sensor aggregator logging is not thread-local.  
-5. SHM write atomicity vs Chrony read race not validated.  
-6. Sensor I/O blocking could stall fusion loops (no async I/O).  
-7. `ValueError` used for “no measurements” control flow.  
-8. Sensor failures are logged but may accumulate without operator intervention.  
-9. `MlVarianceModel` rejection thresholds are heuristic (3σ).  
-10. Goertzel phase unwrapping not formally verified.  
-11. Feature scaling/normalization not standardized.  
-12. CRC32 collision probability not quantified in docs.  
-13. Rate limiting is basic and not token-bucket based.  
-14. `/health` and `/metrics` are unauthenticated.  
-15. Secrets handling not implemented in config.  
-16. Pydantic and TOML are shimmed for local use; a full dependency strategy is needed.  
-17. No schema validation beyond runtime checks.  
-18. Structured logging coverage is partial; tracing not implemented.  
-19. Prometheus/OpenTelemetry exporters are not implemented.  
-20. No profiling hooks or performance counters.  
-21. Model selection criteria (ML vs linear vs heuristic) not automated.  
-22. Online learning convergence is not guaranteed.  
-23. Model versioning and rollback are not implemented.  
-24. Training data quality validation is minimal.  
-25. Hazard tracking is not coupled to automated mitigation.  
-26. Risk matrix scoring is not calibrated to operational data.  
-27. No FMEA artifacts.  
-28. Hardware validation not performed.  
-
-These are explicit non-goals in the current iteration, but they are documented here for transparency and future planning.
-
----
-
-## 🤖 AI/ML Contribution (Architecture, Data, Objectives)
-
-**Model architecture**  
-The “AI-assisted” component is a core, explicit model: it maps environment/context signals to measurement variance scaling rather than altering raw timestamps. The system currently supports:
-
-- `LightweightInferenceModel`: deterministic heuristics (no training).
-- `LinearInferenceModel`: feature-weighted logistic scaling.
-- `MlVarianceModel`: online residual-driven bias updates with safety clamps.
-- `LinearVarianceModel` (trainable): learns weights from labeled data using gradient descent.
-
-**Training data**  
-The repository does not yet include a large real-world dataset. The trainable model expects labeled samples of
-`(sensor_frame, target_scale)` where target scale reflects the desired variance multiplier. The
-`configs/gnss_dropout.yaml` experiment is the canonical synthetic setup.
-
-**Objective function**  
-The objective is to minimize stability metrics (TDEV/MTIE) and reduce drift during reference loss by adjusting
-reference variance (confidence weighting). This keeps the fusion update auditable.
-
-**Validation/generalization**  
-Generalization is currently unproven and must be assessed on independent datasets. The roadmap includes adding real hardware logs and cross-site validation.
-
-**Example training snippet**:
-
-```python
-from ai_multi_reference_timekeeping.ml_model import LinearVarianceModel, TrainingSample
-from ai_multi_reference_timekeeping.time_server import SensorFrame
-
-model = LinearVarianceModel(weights={"temperature_c": 0.01, "humidity_pct": 0.005})
-samples = [
-    TrainingSample(SensorFrame(timestamp=0.0, temperature_c=25.0), target_scale=1.2),
-    TrainingSample(SensorFrame(timestamp=0.0, temperature_c=30.0), target_scale=1.4),
-]
-model.train(samples, learning_rate=1e-3, epochs=100)
-```
-
----
-
-## 🧪 Ablation Study (Baseline vs Adaptive)
-
-The ablation compares:
-- **Baseline**: static variance (Kalman + fixed noise)
-- **Adaptive**: sensor-aware variance scaling (heuristic fusion)
-
-Run the ablation script:
-
-```bash
-python scripts/ablation_gnss_dropout.py
-```
-
-This prints a table of `TDEV` and `MTIE` values for baseline vs adaptive in the GNSS dropout scenario.
-
----
-
-## ✅ Test coverage and validation notes
-
-The test suite includes:
-
-- **Unit tests** for fusion, Kalman filter, metrics, safety case, partitioning, and Chrony SHM CRC.
-- **Smoke tests** for configuration defaults, observability tracker metrics, and sensor validation.
-
-The following test categories are planned but not fully implemented:
-
-- Thread-safety stress tests (multi-threaded `TimeServer.step`).
-- Integration tests with real Chrony and hardware sensors.
-- Performance benchmarks for high-rate sensor streams.
-- Fault injection for sensor outages and degraded timing references.
-
-These items are noted to align with the requested engineering rigor.
 
 ---
 
@@ -490,8 +200,6 @@ The notebooks in `notebooks/` are designed to run directly in **Google Colab** �
   [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-org/ai-multi-reference-timekeeping/blob/main/notebooks/10_test_fusion.ipynb)
 - `notebooks/11_test_time_server.ipynb` — validates time server + ML variance model  
   [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-org/ai-multi-reference-timekeeping/blob/main/notebooks/11_test_time_server.ipynb)
-- `notebooks/12_gnss_dropout_mtie.ipynb` — GNSS dropout MTIE plot  
-  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-org/ai-multi-reference-timekeeping/blob/main/notebooks/12_gnss_dropout_mtie.ipynb)
 
 Each notebook includes an **Open in Colab** link and installs dependencies automatically.
 
@@ -559,15 +267,3 @@ This work builds on established research in time metrology, clock ensembles,
 and IEEE 1588 Precision Time Protocol, and aims to make these ideas more
 accessible to open-source and experimental systems communities.
 
-## 🚧 Status
-
-This repository accompanies a research paper and is intended to evolve.  
-Contributions, discussion, and replication studies are welcome 🤝.
-
----
-
-## 🙏 Acknowledgments
-
-This work builds on established research in time metrology, clock ensembles,
-and IEEE 1588 Precision Time Protocol, and aims to make these ideas more
-accessible to open-source and experimental systems communities.
