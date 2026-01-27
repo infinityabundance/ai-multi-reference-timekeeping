@@ -28,6 +28,25 @@ The goal is to improve **practical packet-level synchronization** on commodity h
 
 ---
 
+---
+
+## 🔬 Scientific Foundation
+
+This project is grounded in **Relativistic Temporal Logic** and **Distributed Systems Theory**. We move beyond standard linear timekeeping to provide a multi-reference framework designed for the next generation of AI agents.
+
+* **Theory & Proofs:** For a deep dive into the mathematical transforms, dilation matrices, and causal manifolds, please see:
+    👉 **[RESEARCH.md](./RESEARCH.md)** 📑
+
+* **Academic Citation:** If you are using this framework for peer-reviewed research, please refer to the [Citation section](#-citation) below.
+
+
+
+---
+> ### 📖 Research Deep-Dive
+> We have formalized the mechanics of **Computational Dilation** and **Temporal Anchoring**. 
+> To explore the underlying physics and math of this implementation, check out our **[Research Paper Summary](./RESEARCH.md)**.
+---
+
 ## 📐 Theoretical Foundation
 
 This project formalizes timekeeping by treating temporal progression as a relativistic coordinate system. Instead of a single linear clock, we define a **Temporal State Vector** where time is mapped across multiple reference frames.
