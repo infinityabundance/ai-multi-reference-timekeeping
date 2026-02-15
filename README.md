@@ -193,13 +193,13 @@ The notebooks in `notebooks/` are designed to run directly in **Google Colab** �
 
 🔰 **Recommended entry point**:
 - `notebooks/00_overview.ipynb` — overview of the architecture and experiments  
-  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-org/ai-multi-reference-timekeeping/blob/main/notebooks/00_overview.ipynb)
+  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/infinityabundance/ai-multi-reference-timekeeping/blob/main/notebooks/00_overview.ipynb)
 
 ✅ **Notebook test runs**:
 - `notebooks/10_test_fusion.ipynb` — validates fusion and quality weighting  
-  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-org/ai-multi-reference-timekeeping/blob/main/notebooks/10_test_fusion.ipynb)
+  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/infinityabundance/ai-multi-reference-timekeeping/blob/main/notebooks/10_test_fusion.ipynb)
 - `notebooks/11_test_time_server.ipynb` — validates time server + ML variance model  
-  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-org/ai-multi-reference-timekeeping/blob/main/notebooks/11_test_time_server.ipynb)
+  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/infinityabundance/ai-multi-reference-timekeeping/blob/main/notebooks/11_test_time_server.ipynb)
 
 Each notebook includes an **Open in Colab** link and installs dependencies automatically.
 
