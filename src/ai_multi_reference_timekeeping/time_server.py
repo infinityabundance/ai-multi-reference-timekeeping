@@ -49,8 +49,16 @@ class SensorInput(Protocol):
 class SensorAggregator:
     """Aggregate sensor inputs into a single frame."""
 
-    def __init__(self, *inputs: SensorInput) -> None:
+    def __init__(
+        self,
+        *inputs: SensorInput,
+        logger: "logging.Logger | None" = None,
+        partitions: "PartitionSupervisor | None" = None,
+    ) -> None:
         self._inputs = inputs
+        # Optional observability hooks for future use
+        self._logger = logger
+        self._partitions = partitions
 
     def sample(self) -> SensorFrame:
         updates: MutableMapping[str, float | bool | None] = {}
@@ -72,6 +80,33 @@ class ReferenceReading:
 
     measurement: Measurement
     metadata: Mapping[str, float | str] = field(default_factory=dict)
+
+
+class InferenceModel(Protocol):
+    """Protocol for inference models that adjust reference variance."""
+
+    def adjusted_variance(self, base_variance: float, frame: SensorFrame) -> float:
+        """Return a variance adjusted by the contextual sensor conditions."""
+
+    def drift_hint(self, frame: SensorFrame) -> float:
+        """Compute a heuristic drift hint based on environmental sensors."""
+
+    def record_frame(self, frame: SensorFrame) -> None:
+        """Persist the latest sensor frame for future deltas."""
+
+
+def _feature_value(frame: SensorFrame, feature: str) -> float:
+    """Extract a numeric feature value from a SensorFrame.
+    
+    This helper is used by the ML model to access sensor features by name.
+    Returns 0.0 if the feature is None or unavailable.
+    """
+    value = getattr(frame, feature, None)
+    if value is None:
+        return 0.0
+    if isinstance(value, bool):
+        return 1.0 if value else 0.0
+    return float(value)
 
 
 class LightweightInferenceModel:
@@ -306,14 +341,21 @@ class TimeServer:
         clock: VirtualClock,
         references: Iterable[ReferenceInput],
         sensors: SensorAggregator | None = None,
-        inference: LightweightInferenceModel | None = None,
+        inference: LightweightInferenceModel | InferenceModel | None = None,
         drift_detector: SlewDriftDetector | None = None,
+        safety_case: "SafetyCase | None" = None,
+        logger: "logging.Logger | None" = None,
+        partition_supervisor: "PartitionSupervisor | None" = None,
     ) -> None:
         self._clock = clock
         self._references = list(references)
         self._sensors = sensors or SensorAggregator()
         self._inference = inference or LightweightInferenceModel()
         self._drift_detector = drift_detector or SlewDriftDetector()
+        # Optional observability and safety hooks for future use
+        self._safety_case = safety_case
+        self._logger = logger
+        self._partition_supervisor = partition_supervisor
 
     def step(self, dt: float) -> tuple[ClockUpdate, SensorFrame, SlewDriftEstimate, float]:
         frame = self._sensors.sample()

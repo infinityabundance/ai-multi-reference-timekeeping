@@ -127,43 +127,6 @@ class HeuristicFusion(ReferenceFusion):
         return fused_offset, fused_variance, normalized_weights
 
 
-class HeuristicFusion(ReferenceFusion):
-    """Fuse measurements with an optional quality multiplier.
-
-    The quality score (0..1) down-weights references when their contextual
-    reliability is lower. If a measurement lacks a quality attribute, 1.0 is
-    assumed.
-    """
-
-    def fuse(self, measurements: Iterable[Measurement]) -> Tuple[float, float, Dict[str, float]]:
-        weights: Dict[str, float] = {}
-        weighted_sum = 0.0
-        weight_total = 0.0
-
-        measurement_list = list(measurements)
-        if not measurement_list:
-            raise ValueError("At least one measurement is required for fusion")
-
-        for measurement in measurement_list:
-            if measurement.variance <= 0:
-                raise ValueError(f"Measurement variance must be positive for {measurement.name}")
-            quality = max(0.0, min(1.0, getattr(measurement, "quality", 1.0)))
-            if quality <= 0:
-                continue
-            weight = (1.0 / measurement.variance) * quality
-            weights[measurement.name] = weight
-            weight_total += weight
-            weighted_sum += weight * measurement.offset
-
-        if weight_total <= 0:
-            raise ValueError("No valid measurements available after applying quality scores")
-
-        fused_offset = weighted_sum / weight_total
-        fused_variance = 1.0 / weight_total
-        normalized_weights = {name: weight / weight_total for name, weight in weights.items()}
-        return fused_offset, fused_variance, normalized_weights
-
-
 class VirtualClock:
     """Virtual clock estimator that fuses references and runs a Kalman filter."""
 
