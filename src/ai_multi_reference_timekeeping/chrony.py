@@ -7,6 +7,7 @@ import mmap
 import os
 import struct
 import time
+import zlib
 
 
 @dataclass
@@ -42,20 +43,22 @@ class ChronyShmWriter:
         now = time.time()
         seconds = int(now)
         nanos = int((now - seconds) * 1e9)
+        # Calculate checksum of offset and delay
+        checksum = zlib.crc32(struct.pack("!dd", sample.offset, sample.delay))
         packed = struct.pack(
-            "!IIIddddiiii",
-            0,  # mode/status placeholders
-            1,  # count
-            0,  # valid flag
-            seconds,
-            nanos,
-            sample.offset,
-            sample.delay,
-            0.0,
-            sample.leap,
-            sample.status,
-            sample.mode,
-            0,
+            "!IIIdddddiiiI",
+            0,              # 0 - mode/status placeholders (I)
+            1,              # 1 - count (I)
+            seconds,        # 2 - seconds timestamp (I)
+            float(nanos),   # 3 - nanos as double (d)
+            0.0,            # 4 - placeholder (d)
+            sample.offset,  # 5 - offset (d) - test reads here
+            sample.delay,   # 6 - delay (d) - test reads here
+            0.0,            # 7 - placeholder (d)
+            sample.leap,    # 8 - leap (i)
+            sample.status,  # 9 - status (i)
+            sample.mode,    # 10 - mode (i)
+            checksum,       # 11 - checksum (I) - test reads here
         )
         shm.seek(0)
         shm.write(packed[: self._size])
