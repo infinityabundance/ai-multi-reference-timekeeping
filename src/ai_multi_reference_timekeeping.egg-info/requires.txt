@@ -1,5 +1,0 @@
-pydantic>=2.6
-pydantic-settings>=2.2
-
-[test]
-pytest>=7.4
