@@ -1,0 +1,2 @@
+[console_scripts]
+aimrt = ai_multi_reference_timekeeping.cli:main
