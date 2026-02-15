@@ -14,6 +14,10 @@ from ai_multi_reference_timekeeping.time_server import (
     _feature_value,
 )
 
+# Test constants
+DUMMY_REFERENCE_OFFSET = 0.001
+DUMMY_REFERENCE_VARIANCE = 1e-6
+
 
 def test_feature_value_extraction() -> None:
     """Test that _feature_value extracts sensor features correctly."""
@@ -87,7 +91,7 @@ def test_time_server_with_extended_signature() -> None:
 
     class DummyReference:
         def sample(self, frame):
-            return Measurement(name="dummy", offset=0.001, variance=1e-6)
+            return Measurement(name="dummy", offset=DUMMY_REFERENCE_OFFSET, variance=DUMMY_REFERENCE_VARIANCE)
 
     from ai_multi_reference_timekeeping.fusion import HeuristicFusion, VirtualClock
     from ai_multi_reference_timekeeping.kalman import ClockCovariance, ClockKalmanFilter, ClockState
@@ -118,7 +122,7 @@ def test_time_server_with_extended_signature() -> None:
 
     # Verify it works
     update, frame, drift, hint = server.step(dt=1.0)
-    assert update.fused_offset == pytest.approx(0.001, abs=1e-9)
+    assert update.fused_offset == pytest.approx(DUMMY_REFERENCE_OFFSET, abs=1e-9)
 
 
 def test_build_time_server_integration() -> None:
@@ -130,7 +134,7 @@ def test_build_time_server_integration() -> None:
 
     class DummyReference:
         def sample(self, frame):
-            return Measurement(name="dummy", offset=0.001, variance=1e-6)
+            return Measurement(name="dummy", offset=DUMMY_REFERENCE_OFFSET, variance=DUMMY_REFERENCE_VARIANCE)
 
     runtime = build_time_server(
         references=[DummyReference()],
@@ -145,4 +149,4 @@ def test_build_time_server_integration() -> None:
 
     # Test a step
     update, frame, drift, hint = runtime.server.step(dt=1.0)
-    assert update.fused_offset == pytest.approx(0.001, abs=1e-9)
+    assert update.fused_offset == pytest.approx(DUMMY_REFERENCE_OFFSET, abs=1e-9)

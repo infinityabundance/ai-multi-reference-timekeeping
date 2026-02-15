@@ -49,8 +49,14 @@ class SensorInput(Protocol):
 class SensorAggregator:
     """Aggregate sensor inputs into a single frame."""
 
-    def __init__(self, *inputs: SensorInput, logger=None, partitions=None) -> None:
+    def __init__(
+        self,
+        *inputs: SensorInput,
+        logger: "logging.Logger | None" = None,
+        partitions: "PartitionSupervisor | None" = None,
+    ) -> None:
         self._inputs = inputs
+        # Optional observability hooks for future use
         self._logger = logger
         self._partitions = partitions
 
@@ -337,15 +343,16 @@ class TimeServer:
         sensors: SensorAggregator | None = None,
         inference: LightweightInferenceModel | InferenceModel | None = None,
         drift_detector: SlewDriftDetector | None = None,
-        safety_case=None,
-        logger=None,
-        partition_supervisor=None,
+        safety_case: "SafetyCase | None" = None,
+        logger: "logging.Logger | None" = None,
+        partition_supervisor: "PartitionSupervisor | None" = None,
     ) -> None:
         self._clock = clock
         self._references = list(references)
         self._sensors = sensors or SensorAggregator()
         self._inference = inference or LightweightInferenceModel()
         self._drift_detector = drift_detector or SlewDriftDetector()
+        # Optional observability and safety hooks for future use
         self._safety_case = safety_case
         self._logger = logger
         self._partition_supervisor = partition_supervisor
