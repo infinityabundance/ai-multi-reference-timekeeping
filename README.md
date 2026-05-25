@@ -15,6 +15,7 @@
 [![Zenodo DOI](https://img.shields.io/badge/DOI-Zenodo-inactive.svg)](https://zenodo.org/)
 [![Open In Colab](https://img.shields.io/badge/Open%20in-Colab-orange.svg)](https://colab.research.google.com/)
 [![IEEE 1588](https://img.shields.io/badge/IEEE-1588%20PTP-lightgrey.svg)](https://standards.ieee.org/standard/1588-2008.html)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/infinityabundance/ai-multi-reference-timekeeping)
 
 This repository contains the reference implementation and reproducibility artifacts for the paper:
 
